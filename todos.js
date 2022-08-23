@@ -33,9 +33,13 @@ app.use((req, res, next) => {
   next();
 });
 
-const compareByTitle = (todoListA, todoListB) => {
-  let titleA = todoListA.title.toLowerCase();
-  let titleB = todoListB.title.toLowerCase();
+const findListById = todoListId => {
+  return todoLists.find(todoList => todoList.id === todoListId);
+};
+
+const compareByTitle = (itemA, itemB) => {
+  let titleA = itemA.title.toLowerCase();
+  let titleB = itemB.title.toLowerCase();
 
   if (titleA < titleB) {
     return -1;
@@ -54,6 +58,16 @@ const sortTodoLists = lists => {
   doneLists.sort(compareByTitle);
 
   return [...undoneLists, ...doneLists];
+};
+
+const sortTodos = todoList => {
+  let undoneTodos = todoList.todos.filter(todo => !todo.isDone());
+  let doneTodos = todoList.todos.filter(todo => todo.isDone());
+
+  undoneTodos.sort(compareByTitle);
+  doneTodos.sort(compareByTitle);
+
+  return [...undoneTodos, ...doneTodos];
 };
 
 app.get("/", (req, res) => {
@@ -102,6 +116,27 @@ app.post("/lists",
     }
   }
 );
+
+// Render individual todo list + todos
+app.get("/lists/:todoListId", (req, res, next) => {
+  let todoListId = req.params.todoListId;
+  let todoList = findListById(+todoListId);
+
+  if (todoList === undefined) {
+    next(new Error("Not found."));
+  } else {
+    res.render("list", {
+      todoList: todoList,
+      todos: sortTodos(todoList),
+    });
+  }
+});
+
+// Error handler
+app.use((err, req, res, _next) => {
+  console.log(err);
+  res.status(404).send(err.message);
+});
 
 app.listen(port, host, () => {
   console.log(`Todos is listening on port ${port} of ${host}.`);
