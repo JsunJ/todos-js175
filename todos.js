@@ -4,6 +4,7 @@ const flash = require("express-flash");
 const session = require("express-session");
 const { body, validationResult } = require("express-validator");
 const TodoList = require("./lib/todolist");
+const { sortTodoLists, sortTodos } = require("./lib/sort");
 
 const app = express();
 const host = "localhost";
@@ -35,39 +36,6 @@ app.use((req, res, next) => {
 
 const findListById = todoListId => {
   return todoLists.find(todoList => todoList.id === todoListId);
-};
-
-const compareByTitle = (itemA, itemB) => {
-  let titleA = itemA.title.toLowerCase();
-  let titleB = itemB.title.toLowerCase();
-
-  if (titleA < titleB) {
-    return -1;
-  } else if (titleA > titleB) {
-    return 1;
-  } else {
-    return 0;
-  }
-};
-
-const sortTodoLists = lists => {
-  let undoneLists = lists.filter(list => !list.isDone());
-  let doneLists = lists.filter(list => list.isDone());
-
-  undoneLists.sort(compareByTitle);
-  doneLists.sort(compareByTitle);
-
-  return [...undoneLists, ...doneLists];
-};
-
-const sortTodos = todoList => {
-  let undoneTodos = todoList.todos.filter(todo => !todo.isDone());
-  let doneTodos = todoList.todos.filter(todo => todo.isDone());
-
-  undoneTodos.sort(compareByTitle);
-  doneTodos.sort(compareByTitle);
-
-  return [...undoneTodos, ...doneTodos];
 };
 
 app.get("/", (req, res) => {
