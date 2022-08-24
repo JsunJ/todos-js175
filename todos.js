@@ -34,10 +34,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// `todoListId` must be numeric
 const findListById = todoListId => {
   return todoLists.find(todoList => todoList.id === todoListId);
 };
 
+// `todoListId` and `todoId` must be numeric
 const findTodoById = (todoListId, todoId) => {
   let todoList = findListById(todoListId);
   if (!todoList) {
@@ -111,40 +113,42 @@ app.get("/lists/:todoListId", (req, res, next) => {
 
 // Toggle completion status of a todo
 app.post("/lists/:todoListId/todos/:todoId/toggle", (req, res, next) => {
-  let todoListId = req.params.todoListId;
-  let todoId = req.params.todoId;
+  let { todoListId, todoId } = { ...req.params };
   let todo = findTodoById(+todoListId, +todoId);
 
   if (!todo) {
     next(new Error("Not found."));
-  }
-
-  if (todo.isDone()) {
-    todo.markUndone();
-    req.flash("success", `${todo.title} marked undone!`);
   } else {
-    todo.markDone();
-    req.flash("success", `${todo.title} marked done!`);
-  }
+    if (todo.isDone()) {
+      todo.markUndone();
+      req.flash("success", `"${todo.title}" marked NOT done!`);
+    } else {
+      todo.markDone();
+      req.flash("success", `"${todo.title}" marked done.`);
+    }
 
-  res.redirect(`/lists/${todoListId}`);
+    res.redirect(`/lists/${todoListId}`);
+  }
 });
 
 // Delete a todo
 app.post("/lists/:todoListId/todos/:todoId/destroy", (req, res, next) => {
-  let todoListId = req.params.todoListId;
-  let todoId = req.params.todoId;
+  let { todoListId, todoId } = { ...req.params };
   let todoList = findListById(+todoListId);
-  let todo = findTodoById(+todoListId, +todoId);
 
-  if (!todoList || !todo) {
+  if (!todoList) {
     next(new Error("Not found."));
+  } else {
+    let todo = findTodoById(+todoListId, +todoId);
+
+    if (!todo) {
+      next(new Error("Not found."));
+    } else {
+      todoList.removeAt(todoList.findIndexOf(todo));
+      req.flash("success", `Removed item "${todo.title}".`);
+      res.redirect(`/lists/${todoListId}`);
+    }
   }
-
-  todoList.removeAt(todoList.findIndexOf(todo));
-  req.flash("success", `Removed item "${todo.title}" from list "${todoList.title}".`);
-
-  res.redirect(`/lists/${todoListId}`);
 });
 
 // Mark all todos as done
@@ -154,11 +158,11 @@ app.post("/lists/:todoListId/complete_all", (req, res, next) => {
 
   if (!todoList) {
     next(new Error("Not found."));
+  } else {
+    todoList.markAllDone();
+    req.flash("success", "All todo items marked done!");
+    res.redirect(`/lists/${todoListId}`);
   }
-
-  todoList.markAllDone();
-  req.flash("success", "All todo items marked done!");
-  res.redirect(`/lists/${todoListId}`);
 });
 
 // Error handler
