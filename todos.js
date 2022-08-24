@@ -38,6 +38,15 @@ const findListById = todoListId => {
   return todoLists.find(todoList => todoList.id === todoListId);
 };
 
+const findTodoById = (todoListId, todoId) => {
+  let todoList = findListById(todoListId);
+  if (!todoList) {
+    return undefined;
+  } else {
+    return todoList.todos.find(todo => todo.id === todoId);
+  }
+};
+
 app.get("/", (req, res) => {
   res.redirect("/lists");
 });
@@ -98,6 +107,58 @@ app.get("/lists/:todoListId", (req, res, next) => {
       todos: sortTodos(todoList),
     });
   }
+});
+
+// Toggle completion status of a todo
+app.post("/lists/:todoListId/todos/:todoId/toggle", (req, res, next) => {
+  let todoListId = req.params.todoListId;
+  let todoId = req.params.todoId;
+  let todo = findTodoById(+todoListId, +todoId);
+
+  if (!todo) {
+    next(new Error("Not found."));
+  }
+
+  if (todo.isDone()) {
+    todo.markUndone();
+    req.flash("success", `${todo.title} marked undone!`);
+  } else {
+    todo.markDone();
+    req.flash("success", `${todo.title} marked done!`);
+  }
+
+  res.redirect(`/lists/${todoListId}`);
+});
+
+// Delete a todo
+app.post("/lists/:todoListId/todos/:todoId/destroy", (req, res, next) => {
+  let todoListId = req.params.todoListId;
+  let todoId = req.params.todoId;
+  let todoList = findListById(+todoListId);
+  let todo = findTodoById(+todoListId, +todoId);
+
+  if (!todoList || !todo) {
+    next(new Error("Not found."));
+  }
+
+  todoList.removeAt(todoList.findIndexOf(todo));
+  req.flash("success", `Removed item "${todo.title}" from list "${todoList.title}".`);
+
+  res.redirect(`/lists/${todoListId}`);
+});
+
+// Mark all todos as done
+app.post("/lists/:todoListId/complete_all", (req, res, next) => {
+  let todoListId = req.params.todoListId;
+  let todoList = findListById(+todoListId);
+
+  if (!todoList) {
+    next(new Error("Not found."));
+  }
+
+  todoList.markAllDone();
+  req.flash("success", "All todo items marked done!");
+  res.redirect(`/lists/${todoListId}`);
 });
 
 // Error handler
