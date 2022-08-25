@@ -1,3 +1,4 @@
 node_modules
 .vscode
+session-store.db
 .DS_Store
