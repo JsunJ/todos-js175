@@ -111,7 +111,7 @@ app.post("/lists",
       });
     } else {
       req.session.todoLists.push(new TodoList(req.body.todoListTitle));
-      req.flash("success", "New todo list added.");
+      req.flash("success", `"${req.body.todoListTitle}" added.`);
       res.redirect("/lists");
     }
   }
@@ -175,7 +175,7 @@ app.post("/lists/:todoListId/todos/:todoId/destroy", (req, res, next) => {
 // Mark all todos as done
 app.post("/lists/:todoListId/complete_all", (req, res, next) => {
   let todoListId = req.params.todoListId;
-  let todoList = findListById(+todoListId, req.session.todoList);
+  let todoList = findListById(+todoListId, req.session.todoLists);
 
   if (!todoList) {
     next(new Error("Not found."));
@@ -198,7 +198,7 @@ app.post("/lists/:todoListId/todos",
   ],
   (req, res, next) => {
     let todoListId = req.params.todoListId;
-    let todoList = findListById(+todoListId, req.session.todoList);
+    let todoList = findListById(+todoListId, req.session.todoLists);
 
     if (!todoList) {
       next(new Error("Not found."));
@@ -214,7 +214,7 @@ app.post("/lists/:todoListId/todos",
         });
       } else {
         todoList.add(new Todo(req.body.todoTitle));
-        req.flash("success", "New todo added.");
+        req.flash("success", `"${req.body.todoTitle}" added to list.`);
         res.redirect(`/lists/${todoListId}`);
       }
     }
@@ -224,7 +224,7 @@ app.post("/lists/:todoListId/todos",
 // Render the edit list page
 app.get("/lists/:todoListId/edit", (req, res, next) => {
   let todoListId = req.params.todoListId;
-  let todoList = findListById(+todoListId, req.session.todoList);
+  let todoList = findListById(+todoListId, req.session.todoLists);
 
   if (todoList === undefined) {
     next(new Error("Not found."));
@@ -237,11 +237,10 @@ app.get("/lists/:todoListId/edit", (req, res, next) => {
 
 // Delete a todo list
 app.post("/lists/:todoListId/destroy", (req, res, next) => {
-  let todoListId = req.params.todoListId;
+  let todoListId = +req.params.todoListId;
   let todoLists = req.session.todoLists;
   let listIndex = todoLists.findIndex(list => list.id === todoListId);
-  let todoList = findListById(+todoListId, req.session.todoList);
-
+  let todoList = findListById(+todoListId, req.session.todoLists);
 
   if (listIndex === -1) {
     next(new Error("Not found."));
@@ -270,7 +269,7 @@ app.post("/lists/:todoListId/edit",
   ],
   (req, res, next) => {
     let todoListId = req.params.todoListId;
-    let todoList = findListById(+todoListId, req.session.todoList);
+    let todoList = findListById(+todoListId, req.session.todoLists);
 
     if (!todoList) {
       next(new Error("Not found."));
