@@ -201,6 +201,75 @@ app.post("/lists/:todoListId/todos",
   }
 );
 
+// Render the edit list page
+app.get("/lists/:todoListId/edit", (req, res, next) => {
+  let todoListId = req.params.todoListId;
+  let todoList = findListById(+todoListId);
+
+  if (todoList === undefined) {
+    next(new Error("Not found."));
+  } else {
+    res.render("edit-list", {
+      todoList: todoList,
+    });
+  }
+});
+
+// Delete a todo list
+app.post("/lists/:todoListId/destroy", (req, res, next) => {
+  let todoListId = req.params.todoListId;
+  let todoList = findListById(+todoListId);
+  let listIndex = todoLists.findIndex(list => list.id === todoList.id);
+
+  if (listIndex === -1) {
+    next(new Error("Not found."));
+  } else {
+    todoLists.splice(listIndex, 1);
+    req.flash("success", `Removed list "${todoList.title}".`);
+    res.redirect("/lists");
+  }
+});
+
+// Edit todo list title
+app.post("/lists/:todoListId/edit",
+  [
+    body("todoListTitle")
+      .trim()
+      .isLength({ min: 1 })
+      .withMessage("A list title was not provided.")
+      .isLength({ max: 100 })
+      .withMessage("List title must be between 1 and 100 characters.")
+      .custom(title => {
+        let duplicate = todoLists.find(list => list.title === title);
+        return duplicate === undefined;
+      })
+      .withMessage("List title must be unique."),
+  ],
+  (req, res, next) => {
+    let todoListId = req.params.todoListId;
+    let todoList = findListById(+todoListId);
+
+    if (!todoList) {
+      next(new Error("Not found."));
+    } else {
+      let errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        errors.array().forEach(message => req.flash("error", message.msg));
+
+        res.render("edit-list", {
+          flash: req.flash(),
+          todoListTitle: req.body.todoListTitle,
+          todoList: todoList,
+        });
+      } else {
+        todoList.setTitle(req.body.todoListTitle);
+        req.flash("success", "Todo list title updated.");
+        res.redirect(`/lists/${todoListId}`);
+      }
+    }
+  }
+);
+
 // Error handler
 app.use((err, req, res, _next) => {
   console.log(err);
